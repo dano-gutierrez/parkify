@@ -183,10 +183,14 @@ class Builder:
                 self.apply(zone,rule)
 
     def tow(self):
-        fields = "cnn,sideofstreet,startdate,enddate,starttime,endtime,_24hourenforcement,status,latitude,longitude,streetfrontagefeet"
+        fields = "cnn,address,sideofstreet,startdate,enddate,starttime,endtime,_24hourenforcement,status,latitude,longitude,streetfrontagefeet"
         condition = f"enddate >= '{TODAY}' and startdate < '{TODAY+dt.timedelta(days=90)}'"
         accepted = 0
-        for r in rows("6r5h-j298", fields,condition):
+        postings = list(rows("6r5h-j298", fields, condition))
+        streets = {}
+        if postings:
+            streets = {s["cnn"]: s for s in rows("3psu-pn9h", "cnn,line,lf_fadd,lf_toadd,rt_fadd,rt_toadd", "active=true")}
+        for r in postings:
             if re.search(r"cancel|denied|revoked|expired",r.get("status",""),re.I):
                 continue
             accepted += 1
@@ -204,11 +208,20 @@ class Builder:
             for zone,curbside,line in self.db.execute("select id,side,line from zone where cnn=?",(r.get("cnn"),)):
                 if side in SIDES.values() and curbside != side:
                     continue
+                points = json.loads(line)
+                addr = curb_addresses(streets.get(r.get("cnn")), points)
+                street_range = re.match(r"^\s*(\d+)\s*[-–]\s*(\d+)\b", r.get("address", ""))
                 precise = False
-                if (side == curbside or side == "BOTH") and r.get("longitude") and r.get("latitude"):
-                    points=json.loads(line)
-                    # A point with unspecified frontage direction supports only a very close match.
-                    precise = line_distance(float(r["longitude"]),float(r["latitude"]),points)<3
+                if addr:
+                    low, high = sorted(addr)
+                    if side in ("ODD", "EVEN") and low % 2 == high % 2 and low % 2 != int(side == "ODD"):
+                        continue
+                    if street_range:
+                        first, last = sorted(int(v) for v in street_range.groups())
+                        if last < low or first > high:
+                            continue
+                        precise = first <= low and last >= high and (side in ("ODD","EVEN","BOTH") or side == curbside)
+                # An address pin alone cannot establish the limits of a posted frontage.
                 candidate = dict(rule)
                 if precise and "end" in rule and "start" in rule:
                     candidate.update(kind="ban",reason="Temporary tow-away zone")
@@ -245,6 +258,35 @@ class Builder:
             except (ValueError, KeyError):
                 rule=dict(kind="unknown",reason="Check meter schedule")
             self.apply(zone,rule)
+
+
+def curb_addresses(street, curb):
+    """Choose the address range on the same side of the oriented centerline as the curb."""
+    if not street:
+        return None
+    geometry = street.get("line", {})
+    lines = geometry.get("coordinates", [])
+    if geometry.get("type") == "LineString":
+        lines = [lines]
+    if geometry.get("type") not in ("LineString", "MultiLineString"):
+        return None
+    x = sum(p[0] for p in curb) / len(curb)
+    y = sum(p[1] for p in curb) / len(curb)
+    segments = [(line_distance(x, y, [a,b]),a,b) for line in lines for a,b in zip(line,line[1:]) if a != b]
+    if not segments:
+        return None
+    distance,a,b = min(segments)
+    if distance > 30:
+        return None
+    cross = (b[0]-a[0])*(y-a[1]) - (b[1]-a[1])*(x-a[0])
+    if abs(cross) < 1e-12:
+        return None
+    prefix = "lf_" if cross > 0 else "rt_"
+    try:
+        bounds = tuple(int(float(street[prefix+field])) for field in ("fadd","toadd"))
+    except (KeyError, ValueError):
+        return None
+    return bounds if all(bounds) else None
 
 
 def line_distance(x,y,points):
