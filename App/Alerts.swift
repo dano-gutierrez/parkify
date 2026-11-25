@@ -30,19 +30,28 @@ enum Alerts {
   }
   static func update(_ session: Session?, verdict: Verdict?, now: Date) async throws {
     center.removePendingNotificationRequests(withIdentifiers: ids)
-    center.removeDeliveredNotifications(withIdentifiers: ids)
     guard let session, let verdict else {
+      center.removeDeliveredNotifications(withIdentifiers: ids)
       UserDefaults.standard.removeObject(forKey: "lastMoveAlert")
       return
     }
     let marker = "\(session.id):\(verdict.event.date.timeIntervalSince1970):\(verdict.event.reason)"
+    let delivered = await center.deliveredNotifications().map(\.request)
+    let obsolete = delivered.filter {
+      ids.contains($0.identifier) && $0.content.userInfo["event"] as? String != marker
+    }
+    center.removeDeliveredNotifications(withIdentifiers: obsolete.map(\.identifier))
+    let alreadyDelivered = delivered.contains {
+      $0.identifier == "deadline" && $0.content.userInfo["event"] as? String == marker
+    }
     for (id, date) in Parking.reminders(verdict, arrival: session.arrival, now: now) {
       if id == "deadline" && date <= now
-        && UserDefaults.standard.string(forKey: "lastMoveAlert") == marker
+        && (alreadyDelivered || UserDefaults.standard.string(forKey: "lastMoveAlert") == marker)
       {
         continue
       }
       let c = UNMutableNotificationContent()
+      c.userInfo["event"] = marker
       let event = id == "evening" ? verdict.sweep ?? verdict.event : verdict.event
       c.title =
         id == "evening"

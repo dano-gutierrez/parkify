@@ -15,6 +15,7 @@ struct ParkingMap: View {
     .init(center: defaultPoint.coordinate, latitudinalMeters: 480, longitudinalMeters: 480))
   @State private var center = defaultPoint
   @State private var sheet: Panel?
+  @State private var cardHeight: CGFloat = 154
   @State private var detail = false
   @State private var followNextFix = false
   @State private var confirmEnd = false
@@ -95,10 +96,10 @@ struct ParkingMap: View {
                 idle
               }
             }.padding(20).frame(maxWidth: .infinity, alignment: .leading)
+              .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { cardHeight = $0 }
           }
           .scrollBounceBehavior(.basedOnSize)
-          .fixedSize(horizontal: false, vertical: true)
-          .frame(maxHeight: geometry.size.height * (detail ? 0.62 : 0.46), alignment: .bottom)
+          .frame(height: min(cardHeight, geometry.size.height * (detail ? 0.62 : 0.46)))
           .background(.regularMaterial, in: .rect(cornerRadius: 28))
           .overlay { RoundedRectangle(cornerRadius: 28).strokeBorder(.primary.opacity(0.08)) }
           .shadow(color: .black.opacity(0.12), radius: 16, y: 5)

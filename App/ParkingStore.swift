@@ -101,6 +101,7 @@ struct Departure: Codable {
       Date().timeIntervalSince(last) < 3600
     {
       sync()
+      await alertTask?.value
       return
     }
     refreshing = true
@@ -128,6 +129,7 @@ struct Departure: Codable {
         : "Using offline city rules · \(city!.generated)"
     }
     sync()
+    await alertTask?.value
   }
   func scheduleRefresh() {
     let request = BGAppRefreshTaskRequest(identifier: Self.refreshID)
