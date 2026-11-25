@@ -18,6 +18,7 @@ final class DriveDetector: NSObject, CLLocationManagerDelegate {
   private var lastCarFix: CLLocation?
   private var stationarySince: Date?
   private var driving = false
+  private var automotiveMotion = false
   private var requestedMotion = false
   private var enabled: Bool { UserDefaults.standard.bool(forKey: "autoParking") }
 
@@ -65,8 +66,11 @@ final class DriveDetector: NSObject, CLLocationManagerDelegate {
       guard let self, let activity, self.enabled, activity.confidence != .low else { return }
       if activity.automotive {
         self.beginDrive(at: activity.startDate)
+        self.automotiveMotion = true
       } else if activity.walking || activity.running {
         self.finishDrive(at: activity.startDate)
+      } else if activity.cycling {
+        self.stopTracking()
       } else if activity.stationary && self.driving {
         self.stationarySince = self.stationarySince ?? activity.startDate
       }
@@ -84,6 +88,7 @@ final class DriveDetector: NSObject, CLLocationManagerDelegate {
   }
   private func stopTracking() {
     driving = false
+    automotiveMotion = false
     drivingSince = nil
     lastCarFix = nil
     stationarySince = nil
@@ -97,7 +102,7 @@ final class DriveDetector: NSObject, CLLocationManagerDelegate {
     guard date.timeIntervalSince(start) > 45, age >= -12, age < 120, fix.horizontalAccuracy > 0
     else { return }
     let clear =
-      date.timeIntervalSince(start) >= 120 && (fix.speed >= 0 && fix.speed < 2.2) && age < 40
+      automotiveMotion && date.timeIntervalSince(start) >= 120 && (fix.speed >= 0 && fix.speed < 2.2) && age < 40
     onStop?(
       Stop(
         point: Point(x: fix.coordinate.longitude, y: fix.coordinate.latitude),
