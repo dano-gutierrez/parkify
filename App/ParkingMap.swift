@@ -239,13 +239,23 @@ struct ParkingMap: View {
     }
     if detail {
       if let c = s.curb { Text("Between \(c.crossStreets)").font(.subheadline) }
-      Text("Check temporary tow signs on this curb. City postings can be incomplete.").font(
-        .footnote
-      ).foregroundStyle(.secondary)
+      if store.city?.towCoverage == true {
+        Text("Check posted temporary tow signs at the curb.").font(.footnote).foregroundStyle(.secondary)
+      }
       if let sweep = v.sweep {
-        LabeledContent("Street cleaning") {
-          Text(sweep.date, format: .dateTime.weekday().month().day().hour().minute())
-        }.font(.subheadline)
+        VStack(alignment: .leading, spacing: 3) {
+          Label("Street cleaning", systemImage: "calendar").font(.subheadline.bold())
+          HStack(spacing: 3) {
+            Text(sweep.date, format: .dateTime.weekday().month().day().hour().minute())
+            if let end = sweep.until {
+              Text("–")
+              Text(end, format: .dateTime.hour().minute())
+            }
+          }.font(.subheadline)
+          if let recurrence = sweep.recurrence, !recurrence.isEmpty {
+            Text(recurrence).font(.footnote).foregroundStyle(.secondary)
+          }
+        }
       }
       if !store.alertStatus.isEmpty { Text(store.alertStatus).font(.footnote) }
       if !store.alarmStatus.isEmpty { Text(store.alarmStatus).font(.footnote) }

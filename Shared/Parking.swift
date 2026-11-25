@@ -78,6 +78,8 @@ struct Session: Codable, Identifiable {
 struct Event: Codable, Equatable {
   var date: Date
   var reason: String
+  var until: Date? = nil
+  var recurrence: String? = nil
 }
 struct Verdict {
   var event: Event
@@ -175,6 +177,13 @@ enum Parking {
     }
     if let paid = session.paidUntil { consider(paid, "Meter payment expires") }
     let rules = session.curb?.rules ?? []
+    let confirmedParking = rules.contains { rule in
+      guard rule.kind == "park" || rule.kind == "paid" || (rule.kind == "permit" && rule.permit == permit) else { return false }
+      return intervals(for: rule, now: now, holidays: [:], horizon: 0).contains { $0.0 <= now && now < $0.1 }
+    }
+    if !confirmedParking && result.caution == nil {
+      result.caution = "No general parking policy confirmed for this time"
+    }
     let grants = rules.filter { $0.kind == "permit" && $0.permit == permit && !permit.isEmpty }
       .flatMap { intervals(for: $0, now: now, holidays: holidays, horizon: 4) }
     for rule in rules {
@@ -190,7 +199,12 @@ enum Parking {
           if a <= now { result.caution = rule.reason }
         case "sweep", "ban":
           if rule.kind == "sweep", result.sweep == nil || a < result.sweep!.date {
-            result.sweep = Event(date: a, reason: rule.reason)
+            let names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+            let weekdays = (rule.days ?? []).compactMap { names.indices.contains($0) ? names[$0] : nil }
+            let ordinals = ["1st", "2nd", "3rd", "4th", "5th"]
+            let weeks = (rule.weeks ?? []).compactMap { (1...5).contains($0) ? ordinals[$0-1] : nil }
+            let modifier = weeks.isEmpty || weeks.count == 5 ? "" : weeks.joined(separator: " & ") + " "
+            result.sweep = Event(date: a, reason: rule.reason, until: b, recurrence: modifier + weekdays.joined(separator: ", "))
           }
           consider(a, rule.reason)
         case "park", "paid":
