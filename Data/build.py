@@ -1,13 +1,10 @@
 """Build a read-only spatial database from the published San Francisco curb inventory."""
 import argparse
-import csv
 import datetime as dt
 import gzip
 import hashlib
-import io
 import json
 import math
-import os
 import re
 import sqlite3
 import time
@@ -93,6 +90,8 @@ def digital(row):
         match = re.search(r"(?:Residential Permit|RPP)\s+([A-Z]{1,2})\b", label)
         if match:
             rule["permit"] = match.group(1)
+            if cat == "Residential Permit Parking":
+                rule["kind"] = "permit"
         elif cat == "Residential Permit Parking":
             rule["reason"] = "Residential time limit"
     elif cat == "Driveway":
@@ -186,9 +185,11 @@ class Builder:
     def tow(self):
         fields = "cnn,sideofstreet,startdate,enddate,starttime,endtime,_24hourenforcement,status,latitude,longitude,streetfrontagefeet"
         condition = f"enddate >= '{TODAY}' and startdate < '{TODAY+dt.timedelta(days=90)}'"
+        accepted = 0
         for r in rows("6r5h-j298", fields,condition):
             if re.search(r"cancel|denied|revoked|expired",r.get("status",""),re.I):
                 continue
+            accepted += 1
             side = SIDES.get(r.get("sideofstreet","").lower(),r.get("sideofstreet","").upper())
             rule = dict(kind="unknown",reason="Temporary tow posting on this block",first=r["startdate"][:10],last=r["enddate"][:10])
             try:
@@ -212,6 +213,8 @@ class Builder:
                 if precise and "end" in rule and "start" in rule:
                     candidate.update(kind="ban",reason="Temporary tow-away zone")
                 self.apply(zone,candidate)
+
+        self.db.execute("insert into meta values(\'towRecords\',?)",(str(accepted),))
 
     def meters(self):
         meters = {}

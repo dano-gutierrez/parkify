@@ -152,6 +152,7 @@ struct ParkingMap: View {
         Text(v.event.reason).font(.headline)
         Text(s.curb?.title ?? "Manually marked spot").font(.subheadline).foregroundStyle(.secondary)
         if let warning=v.caution { Text(warning).font(.footnote).foregroundStyle(.secondary) }
+        if store.city?.towCoverage == false { Text("Temporary tow postings unavailable. Check curb signs.").font(.footnote).foregroundStyle(.secondary) }
         if detail {
             if let c=s.curb { Text("Between \(c.crossStreets)").font(.subheadline) }
             Text("Check temporary tow signs on this curb. City postings can be incomplete.").font(.footnote).foregroundStyle(.secondary)

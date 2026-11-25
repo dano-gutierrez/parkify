@@ -15,6 +15,7 @@ final class City {
     private var db: OpaquePointer?
     let holidays: [String:Set<String>]
     let generated: String
+    let towCoverage: Bool
     let curbAsOf: String
     var stale: Bool {
         generated < Parking.dayKey(Parking.day(.now,plus:-2)) || curbAsOf < Parking.dayKey(Parking.day(.now,plus:-45))
@@ -29,6 +30,7 @@ final class City {
             exceptions[row(0)]=Set((try? JSONDecoder().decode([String].self,from:Data(row(1).utf8))) ?? [])
         }
         City.query(db,"select name,value from meta") { dates[$0(0)]=$0(1) }
+        towCoverage=(Int(dates["towRecords"] ?? "") ?? 0)>0
         holidays=exceptions; generated=dates["generated"] ?? ""; curbAsOf=dates["curbAsOf"] ?? ""
         if generated.isEmpty || curbAsOf.isEmpty { return nil }
     }

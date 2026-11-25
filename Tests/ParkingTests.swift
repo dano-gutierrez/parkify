@@ -36,3 +36,13 @@ private func curb(_ rules:[Rule],y:Double=37.77)->Curb {
     let expired=Parking.reminders(.init(event:.init(date:now,reason:"Tow-away")),arrival:now,now:now)
     #expect(Set(expired.keys)==["deadline"])
 }
+
+@Test func permitGrantOnlyExemptsOverlappingParkingWindows() {
+    let now=at(2026,11,24,9)
+    let general=Rule(kind:"park",reason:"Posted time limit",days:[2],start:540,end:1260,limit:120)
+    let grant=Rule(kind:"permit",reason:"Residential permit Q",days:[2],start:0,end:1440,permit:"Q")
+    let tow=Rule(kind:"ban",reason:"Tow-away",days:[2],start:780,end:840)
+    let s=Session(point:point,arrival:now,curb:curb([general,grant,tow]))
+    #expect(Parking.evaluate(s,now:now,permit:"Q").event.reason=="Tow-away")
+    #expect(Parking.evaluate(s,now:now,permit:"A").event.date==at(2026,11,24,11))
+}

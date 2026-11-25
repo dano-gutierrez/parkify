@@ -96,6 +96,32 @@ enum Parking {
         if minutes == 1440 { return day(date,plus:1) }
         return calendar.date(bySettingHour:minutes/60,minute:minutes%60,second:0,of:date)!
     }
+    private static func intervals(for rule: Rule, now:Date, holidays:[String:Set<String>], horizon:Int) -> [(Date,Date)] {
+        var intervals: [(Date, Date)] = []
+            for offset in -1...horizon {
+                let date = day(now,plus:offset)
+                let c=calendar.dateComponents([.weekday,.day,.month],from:date)
+                guard rule.days?.contains(c.weekday!-1) != false,
+                      rule.weeks?.contains((c.day!-1)/7+1) != false, rule.months?.contains(c.month!) != false,
+                      rule.dates?.contains(c.day!) != false else { continue }
+                let key = dayKey(date)
+                if let first=rule.first, key<first { continue }
+                if let last=rule.last, key>last { continue }
+                let start=rule.start ?? 0, end=rule.end ?? 1440
+                let exception: String
+                switch rule.kind {
+                case "sweep": exception = start < 360 && end<=360 ? "nightSweep" : ((2...6).contains(c.weekday!) && (360..<840).contains(start) ? "daySweep" : "otherSweep")
+                case "park": exception = rule.permit != nil || rule.reason.contains("Residential") ? "residential" : "limit"
+                default: exception = rule.kind
+                }
+                if holidays[key]?.contains(exception)==true { continue }
+                let a=clock(start,on:date), b=clock(end,on:end<=start ? day(date,plus:1):date)
+                if let previous=intervals.last, previous.1 == a {
+                    intervals[intervals.count-1].1=b
+                } else { intervals.append((a,b)) }
+            }
+        return intervals
+    }
     static func evaluate(_ session: Session, now: Date, permit: String = "", holidays: [String:Set<String>] = [:], stale: Bool = false, lookAhead: Int = 100, assumePaymentOnArrival: Bool = false) -> Verdict {
         var result = Verdict(event:Event(date:session.arrival.addingTimeInterval(72*3600),reason:"72-hour street parking limit"))
         if session.curb == nil || session.curb?.rules.isEmpty == true { result.caution = "Curb rules unavailable" }
@@ -109,35 +135,15 @@ enum Parking {
         if let a=session.postedStart, let b=session.postedEnd, b>now { consider(a,"Posted no-parking window") }
         if let paid=session.paidUntil { consider(paid,"Meter payment expires") }
         let rules=session.curb?.rules ?? []
+        let grants = rules.filter { $0.kind=="permit" && $0.permit==permit && !permit.isEmpty }.flatMap { intervals(for:$0,now:now,holidays:holidays,horizon:4) }
         for rule in rules {
+            if rule.kind=="permit" { continue }
             let samePermit = !permit.isEmpty && rule.permit?.uppercased()==permit.uppercased()
             if samePermit && ["park","paid"].contains(rule.kind) { continue }
             if rule.kind == "park" && (rule.limit ?? 4320) >= 4320 { continue }
             let horizon = rule.kind=="sweep" ? lookAhead : 4
-            var intervals: [(Date, Date)] = []
-            for offset in -1...horizon {
-                let date = day(now,plus:offset)
-                let c=calendar.dateComponents([.weekday,.day,.month],from:date)
-                guard rule.days?.contains(c.weekday!-1) != false,
-                      rule.weeks?.contains((c.day!-1)/7+1) != false, rule.months?.contains(c.month!) != false,
-                      rule.dates?.contains(c.day!) != false else { continue }
-                let key = dayKey(date)
-                if let first=rule.first, key<first { continue }
-                if let last=rule.last, key>last { continue }
-                let start=rule.start ?? 0, end=rule.end ?? 1440
-                let exception: String
-                switch rule.kind {
-                case "sweep": exception = start < 360 ? "nightSweep" : "daySweep"
-                case "park": exception = rule.permit != nil || rule.reason.contains("Residential") ? "residential" : "limit"
-                default: exception = rule.kind
-                }
-                if holidays[key]?.contains(exception)==true { continue }
-                let a=clock(start,on:date), b=clock(end,on:end<=start ? day(date,plus:1):date)
-                if let previous=intervals.last, previous.1 == a {
-                    intervals[intervals.count-1].1=b
-                } else { intervals.append((a,b)) }
-            }
-            for (a,b) in intervals where b>now {
+            let windows=intervals(for:rule,now:now,holidays:holidays,horizon:horizon)
+            for (a,b) in windows where b>now {
                 switch rule.kind {
                 case "unknown":
                     if a<=now { result.caution=rule.reason }
@@ -145,6 +151,7 @@ enum Parking {
                     if rule.kind=="sweep", result.sweep == nil || a<result.sweep!.date { result.sweep=Event(date:a,reason:rule.reason) }
                     consider(a,rule.reason)
                 case "park","paid":
+                    if grants.contains(where:{ $0.0<=max(a,now) && $0.1>=b }) { continue }
                     if rule.kind=="paid" {
                         if a<=now { result.paid=true }
                         if !(assumePaymentOnArrival && a <= now), session.paidUntil == nil || session.paidUntil! < a { consider(max(session.arrival,a),"Meter payment required") }
