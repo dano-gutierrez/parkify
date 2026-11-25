@@ -80,6 +80,7 @@ struct Event: Codable, Equatable {
   var reason: String
   var until: Date? = nil
   var recurrence: String? = nil
+  var requiresBlockMove = false
 }
 struct Verdict {
   var event: Event
@@ -155,22 +156,24 @@ enum Parking {
   ) -> Verdict {
     var result = Verdict(
       event: Event(
-        date: session.arrival.addingTimeInterval(72 * 3600), reason: "72-hour street parking limit")
+        date: session.arrival.addingTimeInterval(72 * 3600), reason: "72-hour street parking limit", requiresBlockMove: true)
     )
     if session.curb == nil || session.curb?.rules.isEmpty == true {
       result.caution = "Curb rules unavailable"
     }
     if stale { result.caution = "City data needs an update" }
-    func consider(_ date: Date, _ reason: String) {
+    func consider(_ date: Date, _ reason: String, blockMove: Bool = false) {
       if date < result.event.date
         || (date == result.event.date && reason != result.event.reason
           && reason == "Street cleaning")
       {
-        result.event = Event(date: date, reason: reason)
+        result.event = Event(date: date, reason: reason, requiresBlockMove: blockMove || (date == result.event.date && result.event.requiresBlockMove))
+      } else if date == result.event.date && blockMove {
+        result.event.requiresBlockMove = true
       }
     }
     if let minutes = session.postedLimit {
-      consider(session.arrival.addingTimeInterval(Double(minutes) * 60), "Posted sign limit")
+      consider(session.arrival.addingTimeInterval(Double(minutes) * 60), "Posted sign limit", blockMove: true)
     }
     if let a = session.postedStart, let b = session.postedEnd, b > now {
       consider(a, "Posted no-parking window")
@@ -221,7 +224,7 @@ enum Parking {
           {
             let expiry = max(session.arrival, a).addingTimeInterval(Double(limit) * 60)
             if expiry < b {
-              consider(expiry, rule.kind == "paid" ? "Meter time limit" : rule.reason)
+              consider(expiry, rule.kind == "paid" ? "Meter time limit" : rule.reason, blockMove: true)
             }
           }
         default: result.caution = "Unrecognized curb policy"
@@ -230,6 +233,19 @@ enum Parking {
       }
     }
     return result
+  }
+
+  static func canRelocate(from current: Curb?, to next: Curb, distance: Double, requiresBlockMove: Bool) -> Bool {
+    guard distance >= 4, current?.id != next.id else { return false }
+    guard requiresBlockMove && distance < 161 else { return true }
+    guard let current, !current.cross1.isEmpty, !current.cross2.isEmpty,
+          !next.cross1.isEmpty, !next.cross2.isEmpty else { return false }
+    return current.street != next.street || Set([current.cross1,current.cross2]) != Set([next.cross1,next.cross2])
+  }
+
+  static func suggestedAlarm(for deadline: Date, now: Date) -> Date {
+    let advance = deadline.addingTimeInterval(-900)
+    return advance > now ? advance : deadline
   }
 
   static func reminders(_ verdict: Verdict, arrival: Date, now: Date) -> [String: Date] {

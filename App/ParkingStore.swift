@@ -289,11 +289,12 @@ struct Departure: Codable {
   ) -> [Alternative] {
     guard let city = City(), !city.stale else { return [] }
     var found: [Alternative] = []
+    let blockMove = Parking.evaluate(session, now: now, permit: permit, holidays: city.holidays, lookAhead: 4).event.requiresBlockMove
     let curbs = city.nearby(session.point, radius: 430)
     var byRules: [[Rule]: Verdict] = [:]
     for curb in curbs {
       let anchor = session.point.nearest(on: curb.line)
-      guard anchor.distance >= 161, curb.block != session.curb?.block, !curb.rules.isEmpty,
+      guard Parking.canRelocate(from: session.curb, to: curb, distance: anchor.distance, requiresBlockMove: blockMove), !curb.rules.isEmpty,
         !history.contains(where: { $0.zone == curb.id || $0.block == curb.block })
       else { continue }
       // For comparisons, assume the driver pays at a metered candidate on arrival.

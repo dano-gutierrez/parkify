@@ -79,8 +79,7 @@ enum Alerts {
     }
     let state = ask ? try await manager.requestAuthorization() : manager.authorizationState
     guard state == .authorized else { return "Allow alarms in Settings to enable this alarm." }
-    let advance = event.date.addingTimeInterval(-900)
-    let date = advance > Date() ? advance : event.date
+    let date = Parking.suggestedAlarm(for: event.date, now: .now)
     let stamp = "\(date.timeIntervalSince1970):\(event.reason)"
     if hasAlarm && stamp == UserDefaults.standard.string(forKey: "alarmEvent") {
       return "Alarm set"

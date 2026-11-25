@@ -258,6 +258,12 @@ struct ParkingMap: View {
         }
       }
       if !store.alertStatus.isEmpty { Text(store.alertStatus).font(.footnote) }
+      if !s.alarm && v.event.date > Date() {
+        let suggested = Parking.suggestedAlarm(for: v.event.date, now: .now)
+        Button { store.toggleAlarm() } label: {
+          HStack { Label("Add alarm", systemImage: "alarm"); Spacer(); Text(suggested,format:.dateTime.hour().minute()) }
+        }
+      }
       if !store.alarmStatus.isEmpty { Text(store.alarmStatus).font(.footnote) }
       HStack {
         Button("Edit sign or time") { sheet = .edit }

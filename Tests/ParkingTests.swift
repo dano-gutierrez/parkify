@@ -67,3 +67,12 @@ private func curb(_ rules: [Rule], y: Double = 37.77) -> Curb {
   #expect(Parking.evaluate(s, now: now, permit: "Q").event.reason == "Tow-away")
   #expect(Parking.evaluate(s, now: now, permit: "A").event.date == at(2026, 11, 24, 11))
 }
+
+@Test func relocationDependsOnWhyTheCarMustMove() {
+  let current = curb([])
+  var opposite = current
+  opposite.id = "Opposite"
+  opposite.side = "S"
+  #expect(Parking.canRelocate(from: current, to: opposite, distance: 14, requiresBlockMove: false))
+  #expect(!Parking.canRelocate(from: current, to: opposite, distance: 14, requiresBlockMove: true))
+}
