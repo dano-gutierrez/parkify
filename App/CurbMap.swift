@@ -151,6 +151,11 @@ struct CurbMap: View {
                 .accessibilityIdentifier("curb-option-\(index + 1)")
             }.annotationTitles(.hidden)
           }
+          if let pin, draggedPoint == nil {
+            Annotation("Parking pin", coordinate: pin.coordinate, anchor: .bottom) {
+              pinGlyph
+            }.annotationTitles(.hidden)
+          }
           if let item = inspected {
             Annotation(
               item.curb.title, coordinate: (tappedPoint ?? item.point).coordinate, anchor: .bottom
@@ -176,9 +181,7 @@ struct CurbMap: View {
           center = Point(context.region.center)
         }
         .onTapGesture(coordinateSpace: .local) { position in tapped(position, proxy: proxy) }
-        if let pin, let screen = proxy.convert(pin.coordinate, to: .named("curbMap")),
-          cameraPosition != nil
-        {
+        if let pin, let screen = proxy.convert(pin.coordinate, to: .named("curbMap")) {
           parkingPin(at: screen, proxy: proxy).allowsHitTesting(!browsing)
         }
       }.coordinateSpace(name: "curbMap")
@@ -198,9 +201,8 @@ struct CurbMap: View {
     .onChange(of: inspectedID) { _, id in if id == nil { tappedPoint = nil } }
   }
 
-  private func parkingPin(at screen: CGPoint, proxy: MapProxy) -> some View {
-    let tip = draggedPoint ?? screen
-    return VStack(spacing: -4) {
+  private var pinGlyph: some View {
+    VStack(spacing: -4) {
       Image(systemName: store.selecting ? "parkingsign" : "car.fill").font(
         .system(size: 18, weight: .bold)
       )
@@ -210,41 +212,47 @@ struct CurbMap: View {
       .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(.white, lineWidth: 2) }
       Image(systemName: "arrowtriangle.down.fill").font(.system(size: 12)).foregroundStyle(parkInk)
     }
-    .frame(width: 48, height: 48).contentShape(.rect).shadow(radius: 2, y: 1)
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel("Parking pin").accessibilityHint(
-      "Drag to move the pin, or choose Adjust pin and tap the map."
-    )
-    .accessibilityIdentifier("parking-pin")
-    .gesture(
-      DragGesture(minimumDistance: 3, coordinateSpace: .named("curbMap"))
-        .onChanged { value in
-          if dropOrigin == nil {
-            dropOrigin = screen
-            inspectedID = nil
-            followNextFix = false
-          }
-          if let origin = dropOrigin {
-            draggedPoint = CGPoint(
+    .frame(width: 48, height: 44).shadow(radius: 2, y: 1)
+  }
+
+  private func parkingPin(at screen: CGPoint, proxy: MapProxy) -> some View {
+    let tip = draggedPoint ?? screen
+    return Color.clear.frame(width: 48, height: 48).contentShape(.rect)
+      .overlay { if draggedPoint != nil { pinGlyph } }
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel("Parking pin").accessibilityHint(
+        "Drag to move the pin, or choose Adjust pin and tap the map."
+      )
+      .accessibilityIdentifier("parking-pin")
+      .gesture(
+        DragGesture(minimumDistance: 3, coordinateSpace: .named("curbMap"))
+          .onChanged { value in
+            if dropOrigin == nil {
+              dropOrigin = screen
+              inspectedID = nil
+              followNextFix = false
+            }
+            if let origin = dropOrigin {
+              draggedPoint = CGPoint(
+                x: origin.x + value.translation.width, y: origin.y + value.translation.height)
+            }
+          }.onEnded { value in
+            defer {
+              dropOrigin = nil
+              draggedPoint = nil
+            }
+            guard let origin = dropOrigin else { return }
+            let drop = CGPoint(
               x: origin.x + value.translation.width, y: origin.y + value.translation.height)
+            guard let coordinate = proxy.convert(drop, from: .named("curbMap")) else { return }
+            if store.selecting {
+              store.select(Point(coordinate))
+            } else if let session = store.session {
+              store.begin(at: Point(coordinate), editing: true, time: session.arrival)
+            }
           }
-        }.onEnded { value in
-          defer {
-            dropOrigin = nil
-            draggedPoint = nil
-          }
-          guard let origin = dropOrigin else { return }
-          let drop = CGPoint(
-            x: origin.x + value.translation.width, y: origin.y + value.translation.height)
-          guard let coordinate = proxy.convert(drop, from: .named("curbMap")) else { return }
-          if store.selecting {
-            store.select(Point(coordinate))
-          } else if let session = store.session {
-            store.begin(at: Point(coordinate), editing: true, time: session.arrival)
-          }
-        }
-    )
-    .position(x: tip.x, y: tip.y - 22)
+      )
+      .position(x: tip.x, y: tip.y - 22)
   }
 
   private func tapped(_ position: CGPoint, proxy: MapProxy) {
@@ -334,7 +342,7 @@ private struct CurbCallout: View {
       .frame(height: 32)
       Text(item.curb.title).font(.headline)
       if !item.curb.crossStreets.isEmpty {
-        Text(item.curb.crossStreets).font(.caption).foregroundStyle(.secondary)
+        Text(item.curb.crossStreets).font(.caption).foregroundStyle(Color(uiColor: .secondaryLabel))
       }
       Divider()
       HStack {
@@ -355,7 +363,7 @@ private struct CurbCallout: View {
           if suggested {
             Text("\(Int(item.distance.rounded())) m \(item.routed ? "walk back" : "away")").font(
               .caption
-            ).foregroundStyle(.secondary)
+            ).foregroundStyle(Color(uiColor: .secondaryLabel))
           }
         }
         Spacer()
@@ -370,8 +378,10 @@ private struct CurbCallout: View {
             .frame(width: 44, height: 44).background(parkInk, in: .rect(cornerRadius: 14))
         }.accessibilityLabel("Driving directions in Apple Maps")
       }
-    }.padding(12).frame(width: 250).background(.regularMaterial, in: .rect(cornerRadius: 18))
-      .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(.quaternary) }
-      .shadow(color: .black.opacity(0.15), radius: 6, y: 3).buttonStyle(.plain)
+    }.padding(12).frame(width: 250).background(
+      Color(uiColor: .secondarySystemGroupedBackground), in: .rect(cornerRadius: 18)
+    )
+    .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(.quaternary) }
+    .shadow(color: .black.opacity(0.15), radius: 6, y: 3).buttonStyle(.plain)
   }
 }

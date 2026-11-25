@@ -3,6 +3,8 @@ import XCTest
 
 final class ParkingFlow: XCTestCase {
   @MainActor func testManualSpotAndDeadlineSurviveRelaunch() {
+    let previousLocation = XCUIDevice.shared.location
+    defer { XCUIDevice.shared.location = previousLocation }
     XCUIDevice.shared.location = XCUILocation(
       location: CLLocation(latitude: 37.3317, longitude: -122.0301))
     let app = XCUIApplication()
@@ -29,6 +31,9 @@ final class ParkingFlow: XCTestCase {
     app.terminate()
     app.launch()
     XCTAssertTrue(app.staticTexts["Posted sign limit"].waitForExistence(timeout: 15))
+    XCTAssertTrue(
+      app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Move by")).firstMatch
+        .exists)
     let photo = XCTAttachment(screenshot: app.screenshot())
     photo.name = "Saved parking and move deadline"
     photo.lifetime = .keepAlways

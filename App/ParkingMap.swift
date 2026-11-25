@@ -78,7 +78,9 @@ struct ParkingMap: View {
           }
           .scrollBounceBehavior(.basedOnSize)
           .frame(height: min(cardHeight, geometry.size.height * (expanded ? 0.57 : 0.40)))
-          .background(.regularMaterial, in: .rect(cornerRadius: 24))
+          .background(
+            Color(uiColor: .secondarySystemGroupedBackground), in: .rect(cornerRadius: 24)
+          )
           .overlay { RoundedRectangle(cornerRadius: 24).strokeBorder(.quaternary) }
           .shadow(color: .black.opacity(0.10), radius: 9, y: 3)
           .padding(.horizontal, 10).padding(.bottom, 2)
@@ -170,7 +172,8 @@ struct ParkingMap: View {
       HStack {
         VStack(alignment: .leading, spacing: 3) {
           Text(store.chosen?.title ?? "Place your pin").font(.headline)
-          Text("Drag the pin or tap a curb").font(.subheadline).foregroundStyle(.secondary)
+          Text("Drag the pin or tap a curb").font(.subheadline).foregroundStyle(
+            Color(uiColor: .secondaryLabel))
         }
         Spacer()
         icon("Cancel pin adjustment", "xmark") { store.cancelSelection() }
@@ -239,9 +242,8 @@ struct ParkingMap: View {
             Label("Move now", systemImage: "exclamationmark.octagon.fill").font(.title2.bold())
               .foregroundStyle(.red)
           } else {
-            Text("Move by").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-            Text(v.event.date, format: .dateTime.weekday(.abbreviated).hour().minute())
-              .font(.system(.title, design: .rounded, weight: .bold)).monospacedDigit()
+            Text("Move by \(v.event.date, format: .dateTime.weekday(.abbreviated).hour().minute())")
+              .font(.system(.title2, design: .rounded, weight: .bold)).monospacedDigit()
           }
           if v.event.reason == "Street cleaning" {
             SweepingSign()
@@ -267,7 +269,7 @@ struct ParkingMap: View {
         Spacer()
         Label("Check signs", systemImage: "exclamationmark.triangle")
       }
-    }.font(.caption.weight(.medium)).foregroundStyle(.secondary)
+    }.font(.caption.weight(.medium)).foregroundStyle(Color(uiColor: .secondaryLabel))
     if expanded {
       Divider()
       if let c = s.curb, !c.crossStreets.isEmpty {
@@ -291,9 +293,12 @@ struct ParkingMap: View {
           }
         }
       }
-      if let warning = v.caution { Text(warning).font(.caption).foregroundStyle(.secondary) }
+      if let warning = v.caution {
+        Text(warning).font(.caption).foregroundStyle(Color(uiColor: .secondaryLabel))
+      }
       if store.city?.towCoverage == false {
-        Text("Check posted tow-away signs").font(.caption).foregroundStyle(.secondary)
+        Text("Check posted tow-away signs").font(.caption).foregroundStyle(
+          Color(uiColor: .secondaryLabel))
       }
       HStack(spacing: 8) {
         icon("Edit sign or time", "pencil") { sheet = .edit }
