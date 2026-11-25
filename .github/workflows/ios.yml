@@ -31,7 +31,15 @@ jobs:
           xcrun simctl launch "$phone" com.danogutierrez.parkify
           sleep 8
           xcrun simctl io "$phone" screenshot "$RUNNER_TEMP/parkify.png"
-          xcodebuild -quiet test -project Parkify.xcodeproj -scheme Parkify -destination "id=$phone" -derivedDataPath "$RUNNER_TEMP/sim" -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/parking-tests.xcresult"
+          container="$(xcrun simctl get_app_container "$phone" com.danogutierrez.parkify data)"
+          database="$container/Library/Application Support/City/city.sqlite"
+          for attempt in {1..60}; do
+            if test -s "$database"; then break; fi
+            sleep 2
+          done
+          test -s "$database"
+          sqlite3 -readonly "$database" "select 'Downloaded curb segments', count(*) from zone; select name,value from meta;"
+          xcodebuild test -project Parkify.xcodeproj -scheme Parkify -destination "id=$phone" -derivedDataPath "$RUNNER_TEMP/sim" -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/parking-tests.xcresult"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
