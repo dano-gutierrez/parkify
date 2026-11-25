@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict><key>CFBundleDevelopmentRegion</key><string>en</string>
+<key>CFBundleExecutable</key><string>$(EXECUTABLE_NAME)</string>
+<key>CFBundleIdentifier</key><string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+<key>CFBundleName</key><string>$(PRODUCT_NAME)</string>
+<key>CFBundleShortVersionString</key><string>$(MARKETING_VERSION)</string>
+<key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
+<key>CFBundleDisplayName</key><string>Parkify</string>
+<key>CFBundlePackageType</key><string>APPL</string>
+<key>NSLocationWhenInUseUsageDescription</key><string>Find your car and match your parking spot to a San Francisco curb.</string>
+<key>NSLocationAlwaysAndWhenInUseUsageDescription</key><string>Detect the end of a drive and suggest parking even while your iPhone is locked.</string>
+<key>NSMotionUsageDescription</key><string>Recognize the transition from driving to walking when you park.</string>
+<key>NSAlarmKitUsageDescription</key><string>Set the move-your-car alarms you choose.</string>
+<key>UILaunchScreen</key><dict/><key>UIApplicationSceneManifest</key><dict><key>UIApplicationSupportsMultipleScenes</key><false/></dict><key>UIBackgroundModes</key><array><string>location</string><string>fetch</string></array><key>BGTaskSchedulerPermittedIdentifiers</key><array><string>com.danogutierrez.parkify.refresh</string></array><key>CFBundleURLTypes</key><array><dict><key>CFBundleURLSchemes</key><array><string>parkify</string></array></dict></array></dict></plist>
