@@ -14,7 +14,7 @@ base=os.getenv("SUPABASE_URL","").rstrip("/")
 secret=os.getenv("SUPABASE_STORAGE_KEY","")
 if bool(base)!=bool(secret):
     raise SystemExit("Set both Supabase Storage settings or neither.")
-files=[folder[p["name"]] for p in manifest["parts"]]
+files=[folder/p["name"] for p in manifest["parts"]]
 manifest["base"]=f"https://github.com/{repo}/releases/download/{tag}/"
 if base:
     def upload(name,content,mime):
