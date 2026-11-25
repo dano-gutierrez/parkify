@@ -15,6 +15,7 @@ secret=os.getenv("SUPABASE_STORAGE_KEY","")
 if bool(base)!=bool(secret):
     raise SystemExit("Set both Supabase Storage settings or neither.")
 files=[folder/p["name"] for p in manifest["parts"]]
+manifest["sourceCommit"]=os.environ["GITHUB_SHA"]
 manifest["base"]=f"https://github.com/{repo}/releases/download/{tag}/"
 if base:
     def upload(name,content,mime):
@@ -28,5 +29,5 @@ if base:
     manifest["base"]=f"{base}/storage/v1/object/public/curbs/"
     upload("manifest.json",json.dumps(manifest).encode(),"application/json")
 (folder/"manifest.json").write_text(json.dumps(manifest))
-subprocess.run(["gh","release","create",tag,"--draft","--target",os.environ["GITHUB_SHA"],"--title","San Francisco curb data · "+manifest["generated"],"--notes",f"{manifest['zones']:,} mapped curb segments. Source dates and rules are in the offline database.",str(folder/"manifest.json"),*map(str,files)], check=True)
+subprocess.run(["gh","release","create",tag,"--draft","--target",os.environ["GITHUB_REF_NAME"],"--title","San Francisco curb data · "+manifest["generated"],"--notes",f"{manifest['zones']:,} mapped curb segments. Source dates and rules are in the offline database.",str(folder/"manifest.json"),*map(str,files)], check=True)
 subprocess.run(["gh","release","edit",tag,"--draft=false","--latest"],check=True)
