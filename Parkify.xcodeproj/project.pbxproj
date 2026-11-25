@@ -11,6 +11,7 @@
 		000000000000000000000019 /* Parking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000009 /* Parking.swift */; };
 		000000000000000000000020 /* ParkifyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000002 /* ParkifyApp.swift */; };
 		000000000000000000000021 /* ParkingMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000003 /* ParkingMap.swift */; };
+		A1BC00000000000000000021 /* CurbMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1BC00000000000000000003 /* CurbMap.swift */; };
 		000000000000000000000022 /* Panels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000004 /* Panels.swift */; };
 		000000000000000000000023 /* ParkingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000005 /* ParkingStore.swift */; };
 		000000000000000000000024 /* Alerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000006 /* Alerts.swift */; };
@@ -57,6 +58,7 @@
 /* Begin PBXFileReference section */
 		000000000000000000000002 /* ParkifyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/ParkifyApp.swift; sourceTree = SOURCE_ROOT; };
 		000000000000000000000003 /* ParkingMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/ParkingMap.swift; sourceTree = SOURCE_ROOT; };
+		A1BC00000000000000000003 /* CurbMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/CurbMap.swift; sourceTree = SOURCE_ROOT; };
 		000000000000000000000004 /* Panels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/Panels.swift; sourceTree = SOURCE_ROOT; };
 		000000000000000000000005 /* ParkingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/ParkingStore.swift; sourceTree = SOURCE_ROOT; };
 		000000000000000000000006 /* Alerts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/Alerts.swift; sourceTree = SOURCE_ROOT; };
@@ -103,6 +105,7 @@
 			children = (
 				000000000000000000000002 /* ParkifyApp.swift */,
 				000000000000000000000003 /* ParkingMap.swift */,
+				A1BC00000000000000000003 /* CurbMap.swift */,
 				000000000000000000000004 /* Panels.swift */,
 				000000000000000000000005 /* ParkingStore.swift */,
 				000000000000000000000006 /* Alerts.swift */,
@@ -261,6 +264,7 @@
 			files = (
 				000000000000000000000020 /* ParkifyApp.swift in Sources */,
 				000000000000000000000021 /* ParkingMap.swift in Sources */,
+				A1BC00000000000000000021 /* CurbMap.swift in Sources */,
 				000000000000000000000022 /* Panels.swift in Sources */,
 				000000000000000000000023 /* ParkingStore.swift in Sources */,
 				000000000000000000000024 /* Alerts.swift in Sources */,

@@ -6,7 +6,7 @@ Parkify is a native San Francisco parking assistant for iPhone, built with Swift
 
 Open `Parkify.xcodeproj` in Xcode 26 or newer. Select the Parkify scheme, your iPhone and a signing team with the app group enabled on both targets. The deployment target is iOS 26. The first launch downloads and verifies the city database. Settings shows download status and supports a retry. Manual parking and entered signs work before the download completes.
 
-Tap **Park here**, choose the curb or reposition the map pin, then save. Expand the parking card to edit arrival, paid-through time, or a posted restriction. Select the alarm button to approve a system alarm. Add **Parkify → Parking countdown** when customizing your Lock Screen. Enable automatic detection in Parkify Settings, then allow precise background location and Motion & Fitness. Background delivery depends on iOS and real-world location accuracy.
+Tap a colored curb to see its current parking rules. Tap **Park here**, drag the pin onto the correct side of the street, then save. The card shows when to move. Expand it to edit the sign or arrival time, adjust the pin, or end parking. **Find another curb** marks nearby options on the map. Tap a number to see the move deadline and open driving directions in Apple Maps. Select the alarm button to approve a system alarm. Add **Parkify → Parking countdown** when customizing your Lock Screen. Enable automatic detection in Parkify Settings, then allow precise background location and Motion & Fitness. Background delivery depends on iOS and real-world location accuracy.
 
 ## Data releases
 

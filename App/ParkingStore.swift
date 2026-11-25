@@ -249,21 +249,20 @@ struct Departure: Codable {
     sync(askAlarm: session?.alarm == true)
   }
   func findAlternatives() async {
-    guard let session, let city, !city.stale, !finding else {
-      alternatives = []
-      return
-    }
+    alternatives = []
     finding = true
-    defer { finding = false }
+    defer { if !Task.isCancelled { finding = false } }
+    guard let session, let city, !city.stale else { return }
     let now = Date()
     let history = departureHistory.filter { $0.until > now }
     let permit = self.permit
     var shortlist = await Task.detached(priority: .userInitiated) {
       Self.nearbyCandidates(session: session, now: now, permit: permit, history: history)
     }.value
-    guard self.session?.id == session.id else { return }
+    guard !Task.isCancelled, self.session?.id == session.id else { return }
     alternatives = Array(shortlist.prefix(3))
     for i in shortlist.indices {
+      guard !Task.isCancelled else { return }
       let req = MKDirections.Request()
       req.source = Self.mapItem(shortlist[i].point)
       req.destination = Self.mapItem(session.point)
@@ -273,7 +272,7 @@ struct Departure: Codable {
         shortlist[i].routed = true
       }
     }
-    if self.session?.id == session.id {
+    if !Task.isCancelled, self.session?.id == session.id {
       alternatives = Array(shortlist.sorted(by: Self.ranked).prefix(3))
     }
   }

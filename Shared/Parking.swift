@@ -82,11 +82,23 @@ struct Event: Codable, Equatable {
   var recurrence: String? = nil
   var requiresBlockMove = false
 }
+enum CurbStatus: String, CaseIterable {
+  case free = "Free"
+  case metered = "Metered"
+  case prohibited = "No parking"
+  case uncertain = "Check signs"
+}
+
 struct Verdict {
   var event: Event
   var caution: String?
   var sweep: Event?
   var paid = false
+  func curbStatus(at now: Date) -> CurbStatus {
+    if event.date <= now { return .prohibited }
+    if caution != nil { return .uncertain }
+    return paid ? .metered : .free
+  }
   func title(at now: Date) -> String {
     if event.date <= now { return "Move now" }
     return caution == nil ? "Move by" : "Check signs"

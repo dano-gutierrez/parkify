@@ -76,3 +76,15 @@ private func curb(_ rules: [Rule], y: Double = 37.77) -> Curb {
   #expect(Parking.canRelocate(from: current, to: opposite, distance: 14, requiresBlockMove: false))
   #expect(!Parking.canRelocate(from: current, to: opposite, distance: 14, requiresBlockMove: true))
 }
+
+@Test func mapDistinguishesPaidUncertainAndProhibitedCurbs() {
+  let now = at(2026, 11, 25, 11)
+  let later = now.addingTimeInterval(3600)
+  var verdict = Verdict(event: Event(date: later, reason: "Two-hour limit"))
+  #expect(verdict.curbStatus(at: now) == .free)
+  verdict.paid = true
+  #expect(verdict.curbStatus(at: now) == .metered)
+  verdict.caution = "Check the signs"
+  #expect(verdict.curbStatus(at: now) == .uncertain)
+  #expect(verdict.curbStatus(at: later) == .prohibited)
+}
