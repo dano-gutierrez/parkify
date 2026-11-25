@@ -59,9 +59,7 @@ final class City {
         }
         return values
     }
-    private let columns="z.id,z.uuid,z.block,z.street,z.cross1,z.cross2,z.side,z.line"
     func nearby(_ p: Point, radius: Double) -> [Curb] {
-        // Include CNN in column 3 to keep the shared SELECT layout consistent.
         let sql="select z.id,z.uuid,z.block,z.street,z.cross1,z.cross2,z.side,z.cnn,z.line from bounds b join zone z on z.id=b.id where b.minX<=? and b.maxX>=? and b.minY<=? and b.maxY>=?"
         return curbs(sql,numbers:[p.x+radius/88000,p.x-radius/88000,p.y+radius/111000,p.y-radius/111000])
             .map { ($0,p.nearest(on:$0.line).distance) }.filter { $0.1<=radius }.sorted { $0.1<$1.1 }.map(\.0)

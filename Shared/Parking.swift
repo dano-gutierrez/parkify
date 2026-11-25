@@ -96,7 +96,7 @@ enum Parking {
         if minutes == 1440 { return day(date,plus:1) }
         return calendar.date(bySettingHour:minutes/60,minute:minutes%60,second:0,of:date)!
     }
-    static func evaluate(_ session: Session, now: Date, permit: String = "", holidays: [String:Set<String>] = [:], stale: Bool = false, lookAhead: Int = 100) -> Verdict {
+    static func evaluate(_ session: Session, now: Date, permit: String = "", holidays: [String:Set<String>] = [:], stale: Bool = false, lookAhead: Int = 100, assumePaymentOnArrival: Bool = false) -> Verdict {
         var result = Verdict(event:Event(date:session.arrival.addingTimeInterval(72*3600),reason:"72-hour street parking limit"))
         if session.curb == nil || session.curb?.rules.isEmpty == true { result.caution = "Curb rules unavailable" }
         if stale { result.caution = "City data needs an update" }
@@ -147,9 +147,9 @@ enum Parking {
                 case "park","paid":
                     if rule.kind=="paid" {
                         if a<=now { result.paid=true }
-                        if session.paidUntil == nil || session.paidUntil! < a { consider(max(session.arrival,a),"Meter payment required") }
+                        if !(assumePaymentOnArrival && a <= now), session.paidUntil == nil || session.paidUntil! < a { consider(max(session.arrival,a),"Meter payment required") }
                     }
-                    if let limit=rule.limit, limit<4320 {
+                    if let limit=rule.limit, limit<4320, session.postedLimit == nil || rule.kind=="paid" {
                         let expiry=max(session.arrival,a).addingTimeInterval(Double(limit)*60)
                         if expiry<b { consider(expiry,rule.kind=="paid" ? "Meter time limit" : rule.reason) }
                     }

@@ -93,6 +93,10 @@ struct Departure: Codable {
             UserDefaults.standard.set(Date(),forKey:"cityChecked")
             dataStatus="City rules updated \(city?.generated ?? "recently")"
             if let id=session?.curb?.id { session?.curb=city?.curb(id:id) }
+            else if let parked=session, let city {
+                let nearby=city.nearby(parked.point,radius:12)
+                if Parking.confident(parked.point,accuracy:3,curbs:nearby) { session?.curb=nearby.first }
+            }
             if selecting, let selected { select(selected) }
         } catch {
             dataStatus=city == nil ? "City download unavailable. Enter the posted sign or retry." : "Using offline city rules · \(city!.generated)"
@@ -183,9 +187,8 @@ struct Departure: Codable {
             guard anchor.distance>=161, curb.block != session.curb?.block, !curb.rules.isEmpty,
                   !history.contains(where:{ $0.zone==curb.id || $0.block==curb.block }) else { continue }
             // For comparisons, assume the driver pays at a metered candidate on arrival.
-            var potential=Session(point:anchor.point,arrival:now,curb:curb)
-            potential.paidUntil=now.addingTimeInterval(72*3600)
-            let value=Parking.evaluate(potential,now:now,permit:permit,holidays:city.holidays,lookAhead:4)
+            let potential=Session(point:anchor.point,arrival:now,curb:curb)
+            let value=Parking.evaluate(potential,now:now,permit:permit,holidays:city.holidays,lookAhead:4,assumePaymentOnArrival:true)
             guard value.caution==nil, value.event.date>now.addingTimeInterval(900) else { continue }
             found.append(Alternative(curb:curb,point:anchor.point,verdict:value,distance:anchor.distance))
         }

@@ -81,7 +81,11 @@ struct ParkingMap: View {
         }
         .onAppear { if let s=store.session { focus(s.point) } }
         .onChange(of:store.fix?.timestamp) { _,_ in
-            if followNextFix,let fix=store.fix { focus(Point(fix.coordinate)); followNextFix=false }
+            if followNextFix,let fix=store.fix {
+                let point=Point(fix.coordinate); focus(point)
+                if store.selecting { store.select(point) }
+                followNextFix=false
+            }
         }
         .onChange(of:store.selecting) { _,selected in if selected, let p=store.selected { focus(p) } }
         .sheet(item:$sheet) { p in
@@ -110,7 +114,7 @@ struct ParkingMap: View {
             primary("Park here","parkingsign.circle.fill") {
                 let fresh=store.fix.flatMap { abs($0.timestamp.timeIntervalSinceNow)<60 ? Point($0.coordinate) : nil }
                 store.begin(at:fresh ?? center)
-                if fresh == nil { store.drive.locate() }
+                if fresh == nil { followNextFix=true; store.drive.locate() }
             }
         }
     }
@@ -126,7 +130,7 @@ struct ParkingMap: View {
             } label: { Label("Change curb",systemImage:"arrow.left.arrow.right") }
         } else { Text("Tap the map to place the pin. Check the posted signs for this spot.").font(.subheadline) }
         HStack { Button("Use map center") { store.select(center) }; Spacer(); Button("Use my location") {
-            if let fix=store.fix { let p=Point(fix.coordinate); store.select(p); focus(p) }
+            if let fix=store.fix, abs(fix.timestamp.timeIntervalSinceNow)<60 { let p=Point(fix.coordinate); store.select(p); focus(p) }
             else { followNextFix=true; store.drive.locate() }
         } }.font(.subheadline)
         primary("Save parking","checkmark") { store.saveSelection() }
@@ -150,6 +154,7 @@ struct ParkingMap: View {
         if let warning=v.caution { Text(warning).font(.footnote).foregroundStyle(.secondary) }
         if detail {
             if let c=s.curb { Text("Between \(c.crossStreets)").font(.subheadline) }
+            Text("Check temporary tow signs on this curb. City postings can be incomplete.").font(.footnote).foregroundStyle(.secondary)
             if let sweep=v.sweep { LabeledContent("Street cleaning") { Text(sweep.date,format:.dateTime.weekday().month().day().hour().minute()) }.font(.subheadline) }
             if !store.alertStatus.isEmpty { Text(store.alertStatus).font(.footnote) }
             if !store.alarmStatus.isEmpty { Text(store.alarmStatus).font(.footnote) }

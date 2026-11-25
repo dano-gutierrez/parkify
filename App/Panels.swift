@@ -65,7 +65,7 @@ struct SettingsView: View {
                 Section("Residential permit") { TextField("Permit area, e.g. Q",text:$permit).textInputAutocapitalization(.characters).autocorrectionDisabled() }
                 Section("Reminders") {
                     Text("15 minutes before and when time expires. Early street cleaning also gets an 8 p.m. reminder the night before.")
-                    Button("Enable notifications") { Task { _=await Alerts.request(); store.sync(); openURL(URL(string:UIApplication.openSettingsURLString)!) } }
+                    Button("Enable notifications") { Task { let allowed=await Alerts.request(); store.sync(); if !allowed { openURL(URL(string:UIApplication.openSettingsURLString)!) } } }
                     Text("Add the Parkify countdown when customizing your Lock Screen.").font(.footnote)
                 }
                 Section("City data") {
@@ -104,7 +104,7 @@ struct AlternativesView: View {
                         }
                     }.padding(.vertical,5)
                 }
-                if !store.alternatives.isEmpty { Text("Space availability is unknown until you arrive.").font(.footnote).foregroundStyle(.secondary) }
+                if !store.alternatives.isEmpty { Text("Check temporary signs at the curb. Space availability is unknown until you arrive.").font(.footnote).foregroundStyle(.secondary) }
             }.navigationTitle("Nearby curbs").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement:.confirmationAction) { Button("Done") { dismiss() } } }
         }
