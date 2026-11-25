@@ -22,10 +22,10 @@ private func curb(_ rules:[Rule],y:Double=37.77)->Curb {
     #expect(Parking.evaluate(s,now:at(2026,11,24,9,1),permit:"Q",stale:true).title(at:at(2026,11,24,9,1))=="Move now")
 }
 @Test func recurrenceHolidaysAndDaylightSaving() {
-    let now=at(2026,3,7,14), sweep=Rule(kind:"sweep",reason:"Street cleaning",days:[0],start:420,end:540,weeks:[2,4])
+    let now=at(2026,3,7,14), sweep=Rule(kind:"sweep",reason:"Street cleaning",days:[1],start:420,end:540,weeks:[2,4])
     let s=Session(point:point,arrival:now,curb:curb([sweep]))
-    #expect(Parking.evaluate(s,now:now).sweep?.date==at(2026,3,8,7))
-    #expect(Parking.evaluate(s,now:now,holidays:["2026-03-08":["daySweep"]]).sweep?.date==at(2026,3,22,7))
+    #expect(Parking.evaluate(s,now:now).sweep?.date==at(2026,3,9,7))
+    #expect(Parking.evaluate(s,now:now,holidays:["2026-03-09":["daySweep"]]).sweep?.date==at(2026,3,23,7))
 }
 @Test func editsReplaceObsoleteReminders() {
     let now=at(2026,11,23,16), morning=at(2026,11,24,7)
