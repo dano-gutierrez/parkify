@@ -1,0 +1,22 @@
+name: Publish city data
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '37 11 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: parkify-city-publisher
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 Data/build.py "$RUNNER_TEMP/curbs"
+      - run: python3 Data/publish.py "$RUNNER_TEMP/curbs"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_STORAGE_KEY: ${{ secrets.SUPABASE_STORAGE_KEY }}
