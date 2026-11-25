@@ -32,7 +32,9 @@ final class ParkingFlow: XCTestCase {
     add(photo)
     app.buttons["Expand parking details"].tap()
     app.buttons["End parking"].tap()
-    app.buttons["End parking"].firstMatch.tap()
+    let confirm = app.buttons["End session"]
+    XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+    confirm.tap()
     XCTAssertTrue(app.buttons["Park here"].waitForExistence(timeout: 10))
   }
 }

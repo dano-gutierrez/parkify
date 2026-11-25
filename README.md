@@ -14,7 +14,7 @@ The daily GitHub Actions importer reads [SFMTA Digital Curb](https://data.sf.gov
 
 The app checks for updates on launch and when iOS grants background time. Posted signs take precedence. The city’s temporary tow inventory may lack current permits and exact frontage. Unknown conditions appear as **Check signs**. Nearby suggestions describe mapped restrictions and require checking the actual curb.
 
-For Supabase delivery, create a public-read bucket named `curbs`. Set the repository variable `SUPABASE_URL` and Actions secret `SUPABASE_STORAGE_KEY` with write access to that project’s bucket. The importer uploads the immutable parts and then the manifest. GitHub Releases supplies the same data when Supabase is unconfigured. No write credential belongs in the app.
+City downloads are served by the public `parkify-curbs` bucket in the existing Bucketlist Supabase project, with GitHub Releases as a fallback. The `parkify-publish` Edge Function validates the GitHub Actions identity, repository ID, main branch and publication workflow. It grants short-lived upload URLs for individual Parkify objects. The workflow publishes the manifest last and retains three snapshots in the dedicated bucket. No Bucketlist service credential is stored in GitHub or the iPhone app. [Live Supabase manifest](https://bqmjackxfpwxptkqjseg.supabase.co/storage/v1/object/public/parkify-curbs/manifest.json)
 
 ## Verification
 

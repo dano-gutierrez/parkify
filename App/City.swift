@@ -23,7 +23,8 @@ struct Manifest: Decodable {
 }
 
 final class City {
-  static let manifestURL = URL(
+  static let manifestURL = URL(string:"https://bqmjackxfpwxptkqjseg.supabase.co/storage/v1/object/public/parkify-curbs/manifest.json")!
+  static let backupManifestURL = URL(
     string: "https://github.com/dano-gutierrez/parkify/releases/latest/download/manifest.json")!
   static let directory = URL.applicationSupportDirectory.appending(
     path: "City", directoryHint: .isDirectory)
@@ -129,7 +130,9 @@ final class City {
   static func refresh() async throws -> Bool {
     let manager = FileManager.default
     try manager.createDirectory(at: directory, withIntermediateDirectories: true)
-    let manifestFile = try await checkedDownload(manifestURL)
+    let manifestFile: URL
+    do { manifestFile = try await checkedDownload(manifestURL) }
+    catch { try Task.checkCancellation(); manifestFile = try await checkedDownload(backupManifestURL) }
     defer { try? manager.removeItem(at: manifestFile) }
     let m = try JSONDecoder().decode(Manifest.self, from: Data(contentsOf: manifestFile))
     let host = m.base.host ?? ""

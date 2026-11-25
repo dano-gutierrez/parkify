@@ -126,7 +126,7 @@ struct ParkingMap: View {
       }
     }
     .confirmationDialog("End this parking session?", isPresented: $confirmEnd) {
-      Button("End parking", role: .destructive) {
+      Button("End session", role: .destructive) {
         store.end()
         detail = false
       }

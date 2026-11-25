@@ -1,10 +1,16 @@
 name: Publish city data
 on:
   workflow_dispatch:
+    inputs:
+      mirror_latest:
+        description: Publish the existing validated release to Supabase
+        type: boolean
+        default: false
   schedule:
     - cron: '37 11 * * *'
 permissions:
   contents: write
+  id-token: write
 concurrency:
   group: parkify-city-publisher
   cancel-in-progress: false
@@ -12,14 +18,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 150
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-      - run: python3 Data/build.py "$RUNNER_TEMP/curbs"
-      - run: python3 Data/publish.py "$RUNNER_TEMP/curbs"
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
-          SUPABASE_STORAGE_KEY: ${{ secrets.SUPABASE_STORAGE_KEY }}
+      - if: ${{ !inputs.mirror_latest }}
+        run: python3 Data/build.py "$RUNNER_TEMP/curbs"
+      - if: ${{ !inputs.mirror_latest }}
+        run: python3 Data/publish.py "$RUNNER_TEMP/curbs"
+      - name: Publish to Bucketlist Storage
+        run: |
+          if [[ "${{ inputs.mirror_latest }}" != "true" ]]; then
+            export RELEASE_TAG="city-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          fi
+          python3 Data/mirror.py
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
