@@ -47,7 +47,9 @@ struct Provider: TimelineProvider {
           }
           Text(g.caution && g.deadline > entry.date ? "Check signs · \(g.reason)" : g.reason).font(
             .caption
-          ).lineLimit(2)
+          ).lineLimit(1)
+          Text(g.deadline, format: .dateTime.weekday(.abbreviated).hour().minute())
+            .font(.caption2).lineLimit(1).environment(\.timeZone, Parking.calendar.timeZone)
         } else {
           Label("Parkify", systemImage: "parkingsign.circle").font(.headline)
           Text("No parked car").font(.caption)
